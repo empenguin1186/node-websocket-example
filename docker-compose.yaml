@@ -1,0 +1,11 @@
+version: '3'
+services:
+  app:
+    build: .
+    image: websocket-sample-image
+    volumes:
+      - ./app:/app
+    ports:
+      - "3000:3000"
+    tty: true
+    command: /bin/sh -c "node index.js --inspect=7000"
