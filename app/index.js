@@ -4,6 +4,7 @@ const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
+const projectListRoomName = 'projectList';
 
 app.use(express.json());
 
@@ -13,10 +14,14 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
 
-// 通知APIのルーティング
+// 案件が追加された場合にコールされるエンドポイント.
+// 案件一覧(projectList)部屋と案件詳細($projectId)の部屋に通知を行う
+// クライアントからは '{"projectId": ${案件ID}, "message": "${メッセージ}"}' というデータが渡されることを想定
 app.post('/message', (req, res) => {
   res.send('Got a POST request');
-  io.emit('chat message', 'data: ' + req.body.data);
+  roomId = req.body.roomId;
+  socket.broadcast.to(projectListRoomName).emit('server_to_client', {value : req.body.updateType});
+  socket.broadcast.to(roomId).emit('server_to_client', {value : req.body.updateType});
 })
 
 // WebSocket の処理
@@ -24,7 +29,12 @@ io.on('connection', (socket) => {
   // 初回接続時にクライアントに送信?
   // socket.broadcast.emit('chat message', 'hello, world!');
 
-  console.log(socket.id);
+  // Liff から渡された部屋名に入室する
+  // Liff からは '{"value": "${部屋名}"}' というデータが渡されることを想定
+  socket.on('enter_room', function(data) {
+    room = data.value;
+    socket.join(room);
+  });
 
   socket.on('chat message', (msg) => {
     io.emit('chat message', msg);
