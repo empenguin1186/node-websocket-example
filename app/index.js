@@ -20,8 +20,9 @@ app.get('/', (req, res) => {
 app.post('/message', (req, res) => {
   res.send('Got a POST request');
   roomId = req.body.roomId;
-  socket.broadcast.to(projectListRoomName).emit('server_to_client', {value : req.body.updateType});
-  socket.broadcast.to(roomId).emit('server_to_client', {value : req.body.updateType});
+  io.emit('server_to_client', req.body)
+  // socket.broadcast.to(projectListRoomName).emit('server_to_client', {value : req.body.updateType});
+  // socket.broadcast.to(roomId).emit('server_to_client', {value : req.body.updateType});
 })
 
 // WebSocket の処理
@@ -36,8 +37,8 @@ io.on('connection', (socket) => {
     socket.join(room);
   });
 
-  socket.on('chat message', (msg) => {
-    io.emit('chat message', msg);
+  socket.on('client_to_server', (msg) => {
+    io.emit('server_to_client', msg);
   });
 });
 
