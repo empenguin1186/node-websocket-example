@@ -20,21 +20,19 @@ app.get('/', (req, res) => {
 app.post('/message', (req, res) => {
   res.send('Got a POST request');
   roomId = req.body.roomId;
-  io.emit('server_to_client', req.body)
+  // io.emit('server_to_client', req.body)
   // socket.broadcast.to(projectListRoomName).emit('server_to_client', {value : req.body.updateType});
-  // socket.broadcast.to(roomId).emit('server_to_client', {value : req.body.updateType});
+  io.broadcast.to(roomId).emit('server_to_client', {value : "案件が追加されました"});
 })
 
 // WebSocket の処理
 io.on('connection', (socket) => {
-  // 初回接続時にクライアントに送信?
-  // socket.broadcast.emit('chat message', 'hello, world!');
-
   // Liff から渡された部屋名に入室する
   // Liff からは '{"value": "${部屋名}"}' というデータが渡されることを想定
   socket.on('enter_room', function(data) {
     room = data.value;
     socket.join(room);
+    socket.broadcast.to(room).emit('server_to_client', {value : "誰かが入室しました"});
   });
 
   socket.on('client_to_server', (msg) => {

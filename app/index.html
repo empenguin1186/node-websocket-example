@@ -32,7 +32,7 @@
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         if (input.value) {
-            socket.emit('client_to_server', input.value);
+            socket.emit('enter_room', {value : input.value});
             input.value = '';
         }
     });
