@@ -3,7 +3,37 @@ const app = express();
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
-const io = new Server(server);
+const io = new Server(server, {
+  // wscat 実行時(wscat -c ws://localhost:3000/socket.io/\?transport=websocket)に発生したエラー 「error: Invalid WebSocket frame: RSV1 must be clear」の対応
+  // https://github.com/websockets/ws/issues/1140
+  // https://socket.io/docs/v4/server-options/#permessagedeflate
+  // httpCompression: {
+  //   // Engine.IO options
+  //   threshold: 2048, // defaults to 1024
+  //   // Node.js zlib options
+  //   chunkSize: 8 * 1024, // defaults to 16 * 1024
+  //   windowBits: 14, // defaults to 15
+  //   memLevel: 7, // defaults to 8
+  // }
+  perMessageDeflate: {
+    threshold: 2048, // defaults to 1024
+
+    zlibDeflateOptions: {
+      chunkSize: 8 * 1024, // defaults to 16 * 1024
+    },
+
+    zlibInflateOptions: {
+      windowBits: 14, // defaults to 15
+      memLevel: 7, // defaults to 8
+    },
+
+    clientNoContextTakeover: true, // defaults to negotiated value.
+    serverNoContextTakeover: true, // defaults to negotiated value.
+    serverMaxWindowBits: 10, // defaults to negotiated value.
+
+    concurrencyLimit: 20, // defaults to 10
+  }
+});
 const projectListRoomName = 'projectList';
 
 app.use(express.json());
@@ -20,9 +50,7 @@ app.get('/', (req, res) => {
 app.post('/message', (req, res) => {
   res.send('Got a POST request');
   roomId = req.body.roomId;
-  // io.emit('server_to_client', req.body)
-  // socket.broadcast.to(projectListRoomName).emit('server_to_client', {value : req.body.updateType});
-  io.broadcast.to(roomId).emit('server_to_client', {value : "案件が追加されました"});
+  io.to(roomId).to(projectListRoomName).emit('server_to_client', "案件が追加されました");
 })
 
 // WebSocket の処理
@@ -32,7 +60,7 @@ io.on('connection', (socket) => {
   socket.on('enter_room', function(data) {
     room = data.value;
     socket.join(room);
-    socket.broadcast.to(room).emit('server_to_client', {value : "誰かが入室しました"});
+    socket.broadcast.to(room).emit('server_to_client', "誰かが入室しました");
   });
 
   socket.on('client_to_server', (msg) => {
